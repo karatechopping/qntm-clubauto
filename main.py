@@ -5,16 +5,20 @@ from src.output_handlers.email_handler import EmailHandler
 import sys
 import os
 
-# Define output fields
-output_fields = [
-    "FirstName",
-    "LastName",
-    "Email",
-    "PhoneCell",
-    "Gender",
-    "Status",
-    "OptOutStatus",
-]
+
+# Define field mappings
+field_mappings = {
+    "FirstName": "FirstName-GHL",
+    "LastName": "LastName-GHL",
+    "Email": "Email-GHL",
+    "PhoneCell": "PhoneCell-GHL",
+    "Gender": "Gender-GHL",
+    "Status": "Status-GHL",
+    "OptOutStatus": "OptOutStatus-GHL",
+}
+
+# Define output fields using mapped names
+output_fields = list(field_mappings.values())
 
 
 def main():
@@ -33,7 +37,9 @@ def main():
             print(f"Successfully fetched {len(data['data'])} records")
 
             # Write to CSV using timestamp and output_fields
-            csv_path = csv_handler.write_csv(data["data"], output_fields, timestamp)
+            csv_path = csv_handler.write_csv(
+                data["data"], output_fields, timestamp, field_mappings
+            )
             print(f"Data written to {csv_path}")
 
             # Send email with same timestamp

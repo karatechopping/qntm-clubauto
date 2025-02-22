@@ -4,22 +4,21 @@ from datetime import datetime
 
 
 class CSVHandler:
-    def write_csv(self, data, output_fields, timestamp):
+    def write_csv(self, data, output_fields, timestamp, field_mappings):
         filename = f"report_data_{timestamp}.csv"
         try:
             with open(filename, mode="w", newline="", encoding="utf-8") as csvfile:
                 writer = csv.DictWriter(csvfile, fieldnames=output_fields)
                 writer.writeheader()
 
-                # Debug print to see what we're getting
-                print(f"Number of records received: {len(data)}")
-                print(f"First record sample: {next(iter(data))}")
-
                 for row in data:
-                    filtered_row = {
-                        field: row.get(field, "") for field in output_fields
+                    # Map the fields using the field_mappings dictionary
+                    mapped_row = {
+                        field_mappings[key]: value
+                        for key, value in row.items()
+                        if key in field_mappings
                     }
-                    writer.writerow(filtered_row)
+                    writer.writerow(mapped_row)
 
             print(f"Data successfully written to {filename}")
             return filename
