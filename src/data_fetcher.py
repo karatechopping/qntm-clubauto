@@ -39,23 +39,13 @@ class DataFetcher:
             print(f"Error obtaining access token: {e}")
             sys.exit(1)
 
-    def get_data(self, max_pages=None):
+    def get_data(self, input_fields, max_pages=None):
         access_token = self.get_access_token()
         report_url = "https://api.partners.daxko.com/api/v1/reports/1"
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json",
         }
-
-        output_fields = [
-            "FirstName",
-            "LastName",
-            "Email",
-            "PhoneCell",
-            "Gender",
-            "Status",
-            "OptOutStatus",
-        ]
 
         criteria_fields = {"user": {"gender": "0"}}
 
@@ -65,7 +55,7 @@ class DataFetcher:
         while True:
             payload = {
                 "id": 1,
-                "outputFields": output_fields,
+                "outputFields": input_fields,
                 "criteriaFields": criteria_fields,
                 "pageSize": self.page_size,
                 "pageNumber": page_number,

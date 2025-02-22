@@ -6,12 +6,22 @@ import sys
 import os
 
 
-# Define field mappings
+# Define input and output field mappings
+input_fields = [
+    "FirstName",
+    "LastName",
+    "Email",
+    "PhoneCell",
+    "Gender",
+    "Status",
+    "OptOutStatus",
+]
+
 field_mappings = {
-    "FirstName": "FirstName-GHL",
+    "FirstName": "FirstName",
     "LastName": "LastName-GHL",
     "Email": "Email-GHL",
-    "PhoneCell": "PhoneCell-GHL",
+    "PhoneCell": "Phone-GHL",
     "Gender": "Gender-GHL",
     "Status": "Status-GHL",
     "OptOutStatus": "OptOutStatus-GHL",
@@ -32,7 +42,7 @@ def main():
 
     try:
         # Get access token and fetch data
-        data = fetcher.get_data()
+        data = fetcher.get_data(input_fields)
         if data.get("data"):
             print(f"Successfully fetched {len(data['data'])} records")
 
