@@ -41,13 +41,13 @@ class EmailHandler:
             msg.attach(part)
 
             # Send email
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls()
-                server.login(self.username, self.password)
-                server.send_message(msg)
-
-            print(f"Email sent successfully to {self.recipient}")
-            return True
+        #            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+        #                server.starttls()
+        #                server.login(self.username, self.password)
+        #                server.send_message(msg)
+        #
+        #            print(f"Email sent successfully to {self.recipient}")
+        #            return True
 
         except Exception as e:
             print(f"Failed to send email: {e}")

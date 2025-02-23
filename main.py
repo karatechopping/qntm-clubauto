@@ -6,6 +6,7 @@ from src.output_handlers.email_handler import EmailHandler
 from src.output_handlers.ghl_handler import GHLHandler
 
 # Define the mappings (Daxko -> GHL)
+# In main.py
 field_mappings = {
     # Standard GHL fields
     "FirstName": "firstName",
@@ -20,7 +21,6 @@ field_mappings = {
     "State": "state",
     "Gender": "gender",
     "Zip": ["postalCode", {"ghl_field": "zip", "ghl_id": "TAD26hyktLxWKZa9tOUS"}],
-    # Custom GHL fields with IDs
     "PhoneHome": {"ghl_field": "homePhone", "ghl_id": "SCniAw3rl6DU6SH90OJi"},
     "PhoneWork": {"ghl_field": "workPhone", "ghl_id": "vFOXH73DDi9WOabRLsNp"},
     "UserGroupName": {"ghl_field": "membership_type", "ghl_id": "e2f0o6TtMCkoKvLipmrs"},
@@ -35,6 +35,7 @@ field_mappings = {
         "ghl_id": "NX3D1NYKLdDmOJYwGlgb",
     },
 }
+
 
 # Generate input_fields for fetcher
 input_fields = list(field_mappings.keys())

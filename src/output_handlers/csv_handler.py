@@ -18,8 +18,12 @@ class CSVHandler:
         :param timestamp: Timestamp string for naming the CSV file.
         :return: Path to the created CSV file.
         """
-        # Exclude these fields from the CSV (e.g., "membership_type")
-        excluded_fields = {"membership_type"}
+        # Exclude these fields from the CSV
+        excluded_fields = {"membership_type"} | {
+            k
+            for k in (transformed_data[0].keys() if transformed_data else [])
+            if k.endswith("_id")
+        }
 
         # Get fieldnames by filtering out excluded fields
         all_fieldnames = transformed_data[0].keys() if transformed_data else []

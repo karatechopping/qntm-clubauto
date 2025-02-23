@@ -1,9 +1,5 @@
 # src/data_transformer.py
 
-# NOTE - WE END UP WITH membership_type and membership_type_1 which are identical.
-# We will be adding logic around this in future so for now, just leave it.
-# membership_type is excluded from the CSV
-
 
 class DataTransformer:
     def __init__(self, field_mappings):
@@ -61,10 +57,15 @@ class DataTransformer:
                         if isinstance(map_item, str):
                             transformed_record[map_item] = value
                         elif isinstance(map_item, dict):
+                            # Handle custom field with ID
                             transformed_record[map_item["ghl_field"]] = value
+                            transformed_record[f"{map_item['ghl_field']}_id"] = (
+                                map_item["ghl_id"]
+                            )
                 elif isinstance(mapping, dict):
-                    # Single custom field mapping
+                    # Single custom field mapping with ID
                     transformed_record[mapping["ghl_field"]] = value
+                    transformed_record[f"{mapping['ghl_field']}_id"] = mapping["ghl_id"]
 
             # Add the 5 membership type fields
             for i in range(5):
