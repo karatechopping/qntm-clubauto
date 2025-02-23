@@ -4,6 +4,9 @@ import os
 import sys
 from datetime import datetime
 
+PAGESIZE = 1000
+MAXPAGES = 100
+
 
 class DataFetcher:
     def __init__(self):
@@ -14,7 +17,7 @@ class DataFetcher:
             sys.exit(1)
         self.scope = "CA_qntmfitlife"
         self.grant_type = "client_credentials"
-        self.page_size = 1000
+        self.page_size = PAGESIZE
 
     def get_access_token(self):
         auth_url = "https://api.partners.daxko.com/auth/token"
@@ -39,7 +42,7 @@ class DataFetcher:
             print(f"Error obtaining access token: {e}")
             sys.exit(1)
 
-    def get_data(self, input_fields, max_pages=None):
+    def get_data(self, input_fields, max_pages=MAXPAGES):
         access_token = self.get_access_token()
         report_url = "https://api.partners.daxko.com/api/v1/reports/1"
         headers = {

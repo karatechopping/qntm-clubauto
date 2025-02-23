@@ -4,13 +4,12 @@ import time
 import random
 import json
 from datetime import datetime, timedelta
-from ratelimit import limits, sleep_and_retry
 
 
 class GHLHandler:
     SAMPLE_SIZE = 200
-    RATE_LIMIT = 100  # TEST ONLY: 4 requests (production will be 100)
-    RATE_WINDOW = 10  # seconds
+    RATE_LIMIT = 100
+    RATE_WINDOW = 10
 
     def __init__(self):
         self.api_key = os.environ.get("GHL_API")
@@ -30,10 +29,8 @@ class GHLHandler:
         # Add failed contacts tracking
         self.failed_contacts = []
 
-    @sleep_and_retry
-    @limits(calls=RATE_LIMIT, period=RATE_WINDOW)
     def _make_api_call(self, contact_data):
-        """Make rate-limited API call"""
+        """Make API call"""
         return requests.post(
             f"{self.base_url}/contacts/upsert", headers=self.headers, json=contact_data
         )
@@ -95,16 +92,26 @@ class GHLHandler:
 
         for contact in contacts_to_process:
             try:
+                # Prepare GHL contact data
                 try:
-                    # Prepare GHL contact data
                     ghl_contact = self._prepare_contact_data(contact)
                 except ValueError as ve:
+                    # Add to failed contacts when validation fails
+                    self.failed_contacts.append(
+                        {
+                            "name": f"{contact.get('firstName', '')} {contact.get('lastName', '')}",
+                            "email": contact.get("email", "No email"),
+                            "phone": contact.get("phone", "No phone"),
+                            "error": str(ve),
+                            "detail": "Validation Error",
+                        }
+                    )
                     print(
                         f"\nSkipping contact {contact.get('firstName', '')} {contact.get('lastName', '')}: {str(ve)}"
                     )
                     continue
 
-                # Make the rate-limited API call
+                # Make the API call
                 response = self._make_api_call(ghl_contact)
 
                 response.raise_for_status()
