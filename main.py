@@ -3,6 +3,7 @@ from src.data_fetcher import DataFetcher
 from src.data_transformer import DataTransformer
 from src.output_handlers.csv_handler import CSVHandler
 from src.output_handlers.email_handler import EmailHandler
+from src.output_handlers.ghl_handler import GHLHandler
 
 # Define the mappings (Daxko -> GHL)
 field_mappings = {
@@ -65,6 +66,7 @@ def main():
     transformer = DataTransformer(field_mappings)
     csv_handler = CSVHandler(create_reverse_mapping(field_mappings))
     email_handler = EmailHandler()
+    ghl_handler = GHLHandler()
 
     try:
         # Step 1: Fetch raw data from Daxko
@@ -88,6 +90,11 @@ def main():
             print("Sending email with CSV attachment...")
             email_handler.send_report(csv_path, timestamp)
             print("Email sent successfully")
+
+            # Step 5: Update GHL via API
+            print("Processing contacts in GHL...")
+            ghl_results = ghl_handler.process_contacts(transformed_data)
+            print("GHL processing complete")
 
         else:
             print("No data fetched from the API.")
