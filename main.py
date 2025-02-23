@@ -8,23 +8,53 @@ import os
 
 # Define input and output field mappings
 input_fields = [
+    # Basic contact info
     "FirstName",
     "LastName",
     "Email",
+    # Phone fields
     "PhoneCell",
-    "Gender",
+    "PhoneHome",
+    "PhoneWork",
+    # Address fields
+    "StreetAddress",
+    "City",
+    "State",
+    "Zip",
+    # Membership fields
+    "UserGroupName",
     "Status",
+    "SystemId",
+    # Other fields
+    "Gender",
     "OptOutStatus",
+    "DeliveryMethod",
 ]
 
 field_mappings = {
-    "FirstName": "FirstName",
-    "LastName": "LastName-GHL",
-    "Email": "Email-GHL",
-    "PhoneCell": "Phone-GHL",
-    "Gender": "Gender-GHL",
-    "Status": "Status-GHL",
-    "OptOutStatus": "OptOutStatus-GHL",
+    # Basic contact info
+    "FirstName": "firstName",
+    "LastName": "lastName",
+    "Email": "email",
+    # Phone mappings
+    "PhoneCell": "phone",
+    "PhoneHome": "homePhone",
+    "PhoneWork": "workPhone",
+    "PhoneCell": "cellPhone",
+    # Address mappings
+    "StreetAddress": "address1",
+    "City": "city",
+    "State": "state",
+    "Zip": "postal_code",
+    # Membership mappings
+    "UserGroupName": "membership_type",
+    "Status": "member_activeinactive",
+    "Status": "member_status",
+    "SystemId": "member_number",
+    # Other fields
+    "Gender": "gender",
+    "OptOutStatus": "--OptOutStatus",
+    "DeliveryMethod": "--DeliveryMethod",
 }
 
 # Define output fields using mapped names
