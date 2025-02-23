@@ -1,13 +1,16 @@
-# src/output_handlers/ghl_handler.py
 import os
 import requests
 import time
 import random
 import json
+from datetime import datetime, timedelta
+from ratelimit import limits, sleep_and_retry
 
 
 class GHLHandler:
-    SAMPLE_SIZE = 10
+    SAMPLE_SIZE = 200
+    RATE_LIMIT = 100  # TEST ONLY: 4 requests (production will be 100)
+    RATE_WINDOW = 10  # seconds
 
     def __init__(self):
         self.api_key = os.environ.get("GHL_API")
@@ -27,117 +30,49 @@ class GHLHandler:
         # Add failed contacts tracking
         self.failed_contacts = []
 
-        # Define custom field mappings
-        self.custom_field_ids = {
-            "homePhone": "SCniAw3rl6DU6SH90OJi",
-            "workPhone": "vFOXH73DDi9WOabRLsNp",
-            "cellPhone": "OzwZRpooGyR8Ayrc84u4",
-            "zip": "TAD26hyktLxWKZa9tOUS",
-            "membership_type": "e2f0o6TtMCkoKvLipmrs",
-            "member_activeinactive": "a42q57p3xl4uSYKThK5C",
-            "member_status": "zsoJAoVViTFLHqgexbLl",
-            "member_number": "cewzf3ASjgkju43LCaB0",
-            "opt_out_status": "7SXK1pY4CNzPyFndQOAv",
-            "delivery_method": "NX3D1NYKLdDmOJYwGlgb",
-        }
+    @sleep_and_retry
+    @limits(calls=RATE_LIMIT, period=RATE_WINDOW)
+    def _make_api_call(self, contact_data):
+        """Make rate-limited API call"""
+        return requests.post(
+            f"{self.base_url}/contacts/upsert", headers=self.headers, json=contact_data
+        )
 
     def _prepare_contact_data(self, contact):
         """Prepare contact data for GHL API"""
-        # Initialize basic contact structure
+        # Validate required fields
+        if not contact.get("email") and not contact.get("phone"):
+            raise ValueError("Contact must have either email or phone number")
+
         ghl_contact = {
             "locationId": self.location_id,
             "tags": ["brett-api-test"],
         }
 
-        # Add standard fields if they exist
-        standard_fields = {
-            "firstName": "firstName",
-            "lastName": "lastName",
-            "email": "email",
-            "phone": "phone",
-            "address1": "address1",
-            "city": "city",
-            "state": "state",
-            "gender": "gender",
-            "postalCode": "postalCode",
-        }
+        # Add standard fields from contact data
+        standard_fields = [
+            "firstName",
+            "lastName",
+            "email",
+            "phone",
+            "address1",
+            "city",
+            "state",
+            "gender",
+            "postalCode",
+        ]
 
-        for contact_field, ghl_field in standard_fields.items():
-            if contact.get(contact_field):
-                ghl_contact[ghl_field] = contact[contact_field]
+        for field in standard_fields:
+            if contact.get(field):
+                ghl_contact[field] = contact[field]
 
-        # Prepare custom fields
+        # Add custom fields
         custom_fields = []
-
-        # Phone fields
-        if contact.get("homePhone"):
-            custom_fields.append(
-                {
-                    "id": self.custom_field_ids["homePhone"],
-                    "value": contact["homePhone"],
-                }
-            )
-        if contact.get("workPhone"):
-            custom_fields.append(
-                {
-                    "id": self.custom_field_ids["workPhone"],
-                    "value": contact["workPhone"],
-                }
-            )
-        if contact.get("cellPhone"):
-            custom_fields.append(
-                {
-                    "id": self.custom_field_ids["cellPhone"],
-                    "value": contact["cellPhone"],
-                }
-            )
-
-        # Other custom fields
-        if contact.get("postalCode"):
-            custom_fields.append(
-                {"id": self.custom_field_ids["zip"], "value": contact["postalCode"]}
-            )
-        if contact.get("membership_type"):
-            custom_fields.append(
-                {
-                    "id": self.custom_field_ids["membership_type"],
-                    "value": contact["membership_type"],
-                }
-            )
-        if contact.get("status"):
-            custom_fields.append(
-                {
-                    "id": self.custom_field_ids["member_activeinactive"],
-                    "value": contact["status"],
-                }
-            )
-            custom_fields.append(
-                {
-                    "id": self.custom_field_ids["member_status"],
-                    "value": contact["status"],
-                }
-            )
-        if contact.get("member_number"):
-            custom_fields.append(
-                {
-                    "id": self.custom_field_ids["member_number"],
-                    "value": contact["member_number"],
-                }
-            )
-        if contact.get("opt_out_status"):
-            custom_fields.append(
-                {
-                    "id": self.custom_field_ids["opt_out_status"],
-                    "value": contact["opt_out_status"],
-                }
-            )
-        if contact.get("delivery_method"):
-            custom_fields.append(
-                {
-                    "id": self.custom_field_ids["delivery_method"],
-                    "value": contact["delivery_method"],
-                }
-            )
+        for field, value in contact.items():
+            if field.endswith("_id") and contact.get(field.replace("_id", "")):
+                custom_fields.append(
+                    {"id": value, "value": contact[field.replace("_id", "")]}
+                )
 
         if custom_fields:
             ghl_contact["customFields"] = custom_fields
@@ -160,26 +95,23 @@ class GHLHandler:
 
         for contact in contacts_to_process:
             try:
-                ghl_contact = self._prepare_contact_data(contact)
+                try:
+                    # Prepare GHL contact data
+                    ghl_contact = self._prepare_contact_data(contact)
+                except ValueError as ve:
+                    print(
+                        f"\nSkipping contact {contact.get('firstName', '')} {contact.get('lastName', '')}: {str(ve)}"
+                    )
+                    continue
 
-                print("\nPrepared GHL contact data:")
-                print(json.dumps(ghl_contact, indent=2))
-
-                response = requests.post(
-                    f"{self.base_url}/contacts/upsert",
-                    headers=self.headers,
-                    json=ghl_contact,
-                )
-
-                print("\nAPI Response:")
-                print(f"Status Code: {response.status_code}")
-                print(json.dumps(response.json(), indent=2))
+                # Make the rate-limited API call
+                response = self._make_api_call(ghl_contact)
 
                 response.raise_for_status()
                 results.append(response.json())
                 successful_updates += 1
                 print(
-                    f"\nSuccessfully upserted {ghl_contact['firstName']} {ghl_contact['lastName']}"
+                    f"Successfully upserted {ghl_contact.get('firstName', '')} {ghl_contact.get('lastName', '')}"
                 )
 
             except requests.exceptions.RequestException as e:
@@ -189,6 +121,7 @@ class GHLHandler:
                 else:
                     error_detail = "No response details available"
 
+                # Record the failure
                 self.failed_contacts.append(
                     {
                         "name": f"{contact.get('firstName', '')} {contact.get('lastName', '')}",
@@ -201,12 +134,12 @@ class GHLHandler:
                 print(f"\nError upserting contact: {error_message}")
                 print(f"Response text: {error_detail}")
 
-            time.sleep(0.1)
-
+        # Print summary
         print(
             f"\nCompleted GHL updates: {successful_updates} contacts successfully processed"
         )
 
+        # Print failure report if there were any failures
         if self.failed_contacts:
             print("\n=== FAILED CONTACTS REPORT ===")
             print(f"Total failures: {len(self.failed_contacts)}")
