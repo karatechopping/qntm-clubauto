@@ -1,85 +1,61 @@
 import csv
 import os
-from datetime import datetime
 
 
 class CSVHandler:
-    def __init__(self, num_membership_types=5):
-        self.num_membership_types = num_membership_types
+    def __init__(self, reverse_mapping):
+        """
+        Initialize the CSVHandler with the reverse mapping (GHL -> Daxko).
+        :param reverse_mapping: A dictionary that maps GHL fields to Daxko fields
+                                for use in the second CSV header row.
+        """
+        self.reverse_mapping = reverse_mapping
 
-    def write_csv(self, data, output_fields, timestamp, field_mappings):
-        filename = f"report_data_{timestamp}.csv"
+    def write_csv(self, transformed_data, timestamp):
+        """
+        Write transformed data to a CSV file while excluding certain fields.
+        :param transformed_data: The transformed data.
+        :param timestamp: Timestamp string for naming the CSV file.
+        :return: Path to the created CSV file.
+        """
+        # Exclude these fields from the CSV (e.g., "membership_type")
+        excluded_fields = {"membership_type"}
 
-        # Create reverse mapping for Daxko headers
-        reverse_mappings = {v: k for k, v in field_mappings.items()}
+        # Get fieldnames by filtering out excluded fields
+        all_fieldnames = transformed_data[0].keys() if transformed_data else []
+        fieldnames = [field for field in all_fieldnames if field not in excluded_fields]
 
-        # Modify output fields to include multiple membership types
-        modified_output_fields = []
-        for field in output_fields:
-            if field == "membership_type":
-                for i in range(1, self.num_membership_types + 1):
-                    modified_output_fields.append(f"membership_type_{i}")
-            else:
-                modified_output_fields.append(field)
+        filename = f"transformed_data_{timestamp}.csv"
 
         try:
             with open(filename, mode="w", newline="", encoding="utf-8") as csvfile:
-                writer = csv.writer(csvfile)  # Use regular writer for custom headers
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
-                # Write GHL headers (Row 1)
-                writer.writerow(modified_output_fields)
+                # Write GHL header row (row 1)
+                writer.writeheader()
 
-                # Write Daxko headers (Row 2)
-                daxko_headers = []
-                for field in modified_output_fields:
-                    if field.startswith("membership_type_"):
-                        daxko_headers.append("UserGroupName")
-                    else:
-                        daxko_headers.append(reverse_mappings.get(field, field))
-                writer.writerow(daxko_headers)
+                # Write reverse mapping header row (row 2)
+                reverse_headers = {
+                    ghl_field: self.reverse_mapping.get(ghl_field, ghl_field)
+                    for ghl_field in fieldnames
+                }
+                writer.writerow(reverse_headers)
 
-                # Switch to DictWriter for data rows
-                dict_writer = csv.DictWriter(csvfile, fieldnames=modified_output_fields)
-
-                # Group data by member ID
-                grouped_data = {}
-                for row in data:
-                    member_id = row.get("SystemId")
-                    if member_id not in grouped_data:
-                        # Initialize new member record with empty membership types
-                        mapped_row = {field: "" for field in modified_output_fields}
-                        # Map non-membership fields
-                        for key, value in row.items():
-                            if key in field_mappings:
-                                mapped_field = field_mappings[key]
-                                if mapped_field != "membership_type":
-                                    mapped_row[mapped_field] = value
-                        # Add first membership type
-                        mapped_row["membership_type_1"] = row.get("UserGroupName", "")
-                        grouped_data[member_id] = {
-                            "row": mapped_row,
-                            "membership_count": 1,
-                        }
-                    else:
-                        # Add additional membership type if count is within limit
-                        count = grouped_data[member_id]["membership_count"]
-                        if count < self.num_membership_types:
-                            field_name = f"membership_type_{count + 1}"
-                            grouped_data[member_id]["row"][field_name] = row.get(
-                                "UserGroupName", ""
-                            )
-                            grouped_data[member_id]["membership_count"] += 1
-
-                # Write combined data
-                for member_data in grouped_data.values():
-                    dict_writer.writerow(member_data["row"])
+                # Write all transformed data rows
+                for row in transformed_data:
+                    # Exclude unwanted fields from the row
+                    filtered_row = {
+                        k: v for k, v in row.items() if k not in excluded_fields
+                    }
+                    writer.writerow(filtered_row)
 
                 print(f"Data successfully written to {filename}")
                 return filename
 
-        except IOError as e:
-            print(f"Error writing to CSV file: {e}")
+        except ValueError as e:
+            print(f"Error: {e}")
             raise
-        except Exception as e:
-            print(f"Unexpected error while writing CSV: {e}")
+
+        except IOError as e:
+            print(f"Error writing CSV file: {e}")
             raise
