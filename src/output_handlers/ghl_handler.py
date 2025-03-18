@@ -2,13 +2,11 @@ import os
 import asyncio
 import aiohttp
 import time
-import random
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
 class GHLHandler:
-    SAMPLE_SIZE = -1  # Add this back to the class constants
     RATE_LIMIT = 100
     RATE_WINDOW = 10
     CONCURRENT_THREADS = 10
@@ -19,6 +17,7 @@ class GHLHandler:
     SAFETY_BUFFER = 1.0
 
     def __init__(self):
+        self.logger = logging.getLogger(__name__)
         self.api_key = os.environ.get("GHL_API")
         self.location_id = os.environ.get("GHL_LOCATION")
         if not self.api_key or not self.location_id:
@@ -33,6 +32,8 @@ class GHLHandler:
 
         self.failed_contacts = []
         self.successful_contacts = []
+        self.added_contacts = []
+        self.updated_contacts = []
         self.request_times = []
         self.remaining_daily = None
         self.remaining_burst = None
@@ -51,28 +52,29 @@ class GHLHandler:
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         log_file = f'logs/ghl_processing_{timestamp}.log'
 
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.FileHandler(log_file),
-                logging.StreamHandler()
-            ]
-        )
+        # File handler - only for contact processing status
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setLevel(logging.INFO)  # Will catch INFO level messages
+        file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+
+        # Console handler - only for summary and errors
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.WARNING)  # Will only catch WARNING and ERROR
+        console_handler.setFormatter(logging.Formatter('%(message)s'))
+
         self.logger = logging.getLogger(__name__)
-        self.logger.info(f"Starting new processing session - Log file: {log_file}")
+        self.logger.setLevel(logging.INFO)  # Allow INFO level messages
+        self.logger.addHandler(file_handler)
+        self.logger.addHandler(console_handler)
+
+        print(f"Starting GHL Processing - Log file: {log_file}")
 
     async def _update_rate_limits(self, response):
         """Update rate limit tracking based on response headers"""
-        old_remaining = self.remaining_burst
-
         self.remaining_daily = int(response.headers.get('X-RateLimit-Daily-Remaining', 0))
         self.remaining_burst = int(response.headers.get('X-RateLimit-Remaining', 0))
         self.interval_ms = int(response.headers.get('X-RateLimit-Interval-Milliseconds', 10000))
         self.rate_limit_max = int(response.headers.get('X-RateLimit-Max', 100))
-
-        self.logger.info(f"Rate limits updated - Old remaining: {old_remaining}, New remaining: {self.remaining_burst}, " +
-                        f"Daily remaining: {self.remaining_daily}, Interval: {self.interval_ms}ms")
 
     def _prepare_contact_data(self, contact):
         """Prepare contact data for GHL API"""
@@ -84,7 +86,6 @@ class GHLHandler:
             "tags": ["brett-api-test"],
         }
 
-        # Map standard fields
         standard_fields = ["firstName", "lastName", "email", "phone",
                          "address1", "city", "state", "gender", "postalCode"]
 
@@ -92,7 +93,6 @@ class GHLHandler:
             if contact.get(field):
                 ghl_contact[field] = contact[field]
 
-        # Map custom fields
         custom_fields = []
         for field, value in contact.items():
             if field.endswith("_id") and contact.get(field.replace("_id", "")):
@@ -107,23 +107,17 @@ class GHLHandler:
         return ghl_contact
 
     async def _make_api_call(self, session, contact_data, retry_count=0):
-        """Make API call with rate limiting and retries"""
         try:
             current_time = time.time()
             time_since_burst = current_time - self.last_burst_time
 
-            # Check if we need to start a new window
             if (self.remaining_burst and self.remaining_burst < self.BURST_THRESHOLD) or time_since_burst >= 8:
                 wait_time = max(0, (10 - time_since_burst))
-                self.logger.info(f"Starting new window - waiting {wait_time:.2f}s")
-                await asyncio.sleep(wait_time + 0.5)  # Added safety buffer
+                await asyncio.sleep(wait_time + 0.5)
                 self.last_burst_time = time.time()
                 self.requests_in_current_window = 0
 
-            # Add delay between requests
             await asyncio.sleep(0.2)
-
-            start_time = time.time()
             self.requests_in_current_window += 1
 
             async with session.post(
@@ -134,8 +128,7 @@ class GHLHandler:
                 await self._update_rate_limits(response)
                 response_text = await response.text()
 
-                if response.status == 429:  # Rate limit hit
-                    self.logger.warning(f"Rate limit hit - remaining: {self.remaining_burst}")
+                if response.status == 429:
                     if retry_count < self.MAX_RETRIES:
                         await asyncio.sleep(3)
                         return await self._make_api_call(session, contact_data, retry_count + 1)
@@ -153,105 +146,83 @@ class GHLHandler:
             raise
 
     async def _process_single_contact(self, session, contact, semaphore):
-        """Process a single contact with rate limiting"""
         async with semaphore:
             try:
                 ghl_contact = self._prepare_contact_data(contact)
-                await asyncio.sleep(self.REQUEST_DELAY)
-
                 response_json, contact_data = await self._make_api_call(session, ghl_contact)
 
-                is_new = response_json.get('new', False)
-                action = "Created new contact" if is_new else "Updated existing contact"
-
-                self.logger.info(
-                    f"{action}: {ghl_contact.get('firstName', '')} "
-                    f"{ghl_contact.get('lastName', '')}"
-                )
-
-                self.successful_contacts.append({
+                contact_info = {
                     "name": f"{contact.get('firstName', '')} {contact.get('lastName', '')}",
-                    "action": action,
-                    "response": response_json
-                })
+                    "email": contact.get('email', ''),
+                    "phone": contact.get('phone', ''),
+                    "system_id": contact.get('member_number', 'No ID'),
+                    "id": response_json.get('contact', {}).get('id'),
+                }
 
+                is_new = response_json.get('new', False)
+                if is_new:
+                    self.added_contacts.append(contact_info)
+                    self.logger.info(f"Added: {contact_info['name']} (ID: {contact_info['system_id']})")
+                else:
+                    self.updated_contacts.append(contact_info)
+                    self.logger.info(f"Updated: {contact_info['name']} (ID: {contact_info['system_id']})")
+
+                self.successful_contacts.append(contact_info)
                 return response_json
 
             except Exception as e:
                 self.logger.error(
-                    f"Error processing contact "
-                    f"{contact.get('firstName', '')} {contact.get('lastName', '')}: {str(e)}"
+                    f"Failed: {contact.get('firstName', '')} {contact.get('lastName', '')} "
+                    f"(ID: {contact.get('member_number', 'No ID')}) - {str(e)}"
                 )
                 self.failed_contacts.append({
                     "name": f"{contact.get('firstName', '')} {contact.get('lastName', '')}",
-                    "email": contact.get("email", "No email"),
-                    "phone": contact.get("phone", "No phone"),
-                    "error": str(e),
-                    "detail": str(e),
+                    "system_id": contact.get('member_number', 'No ID'),
+                    "error": str(e)
                 })
                 return None
 
     async def _process_all_contacts(self, contacts):
-        """Process all contacts with concurrency control"""
         timeout = aiohttp.ClientTimeout(total=60)
         semaphore = asyncio.Semaphore(self.CONCURRENT_THREADS)
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            tasks = []
-            for i, contact in enumerate(contacts):
-                if i > 0 and i % 50 == 0:
-                    self.logger.info(f"Processed {i}/{len(contacts)} contacts...")
-                    if self.remaining_daily is not None:
-                        self.logger.info(f"Daily requests remaining: {self.remaining_daily}")
-
-                tasks.append(self._process_single_contact(session, contact, semaphore))
-
+            tasks = [self._process_single_contact(session, contact, semaphore)
+                    for contact in contacts]
             results = await asyncio.gather(*tasks, return_exceptions=True)
             return [r for r in results if r is not None]
 
     def process_contacts(self, contacts):
         """Main entry point for processing contacts"""
+        print(f"\nProcessing {len(contacts)} contacts...")
         start_time = time.time()
 
-        # Handle sample size
-        if self.SAMPLE_SIZE == -1:
-            contacts_to_process = contacts
-            self.logger.info(f"Processing all {len(contacts)} contacts")
-        else:
-            contacts_to_process = random.sample(
-                contacts,
-                min(self.SAMPLE_SIZE, len(contacts))
-            )
-            self.logger.info(f"Processing {len(contacts_to_process)} randomly selected contacts")
-
-        results = asyncio.run(self._process_all_contacts(contacts_to_process))
+        results = asyncio.run(self._process_all_contacts(contacts))
 
         end_time = time.time()
         upload_duration = end_time - start_time
         minutes = int(upload_duration // 60)
         seconds = int(upload_duration % 60)
 
-        self.logger.info("\n=== PROCESSING SUMMARY ===")
-        self.logger.info(f"Total time: {minutes} minutes and {seconds} seconds")
-        self.logger.info(f"Successfully processed: {len(self.successful_contacts)} contacts")
-        self.logger.info(f"Failed: {len(self.failed_contacts)} contacts")
-
-        if self.request_times:
-            avg_time = sum(self.request_times) / len(self.request_times)
-            requests_per_second = 1 / avg_time if avg_time > 0 else 0
-            self.logger.info(f"Average request time: {avg_time:.2f} seconds")
-            self.logger.info(f"Effective requests per second: {requests_per_second:.2f}")
-
-        if self.remaining_daily is not None:
-            self.logger.info(f"Remaining daily capacity: {self.remaining_daily} requests")
+        # Print final summary
+        print("\nProcessing Complete:")
+        print(f"Added: {len(self.added_contacts)} | Updated: {len(self.updated_contacts)}")
+        print(f"Success: {len(self.successful_contacts)} | Failed: {len(self.failed_contacts)}")
+        print(f"Total time: {minutes}m {seconds}s")
 
         if self.failed_contacts:
-            self.logger.error("\n=== FAILED CONTACTS REPORT ===")
-            for idx, failure in enumerate(self.failed_contacts, 1):
-                self.logger.error(f"\n{idx}. Contact: {failure['name']}")
-                self.logger.error(f"   Email: {failure['email']}")
-                self.logger.error(f"   Phone: {failure['phone']}")
-                self.logger.error(f"   Error: {failure['error']}")
-                self.logger.error("   " + "-" * 50)
+            print(f"\nWARNING: {len(self.failed_contacts)} contacts failed to process")
+            print("See log file for details")
 
-        return results
+        return {
+            'ghl_stats': {
+                'success': len(self.successful_contacts),
+                'failed': len(self.failed_contacts),
+                'added': len(self.added_contacts),
+                'updated': len(self.updated_contacts),
+                'processing_time': {
+                    'minutes': minutes,
+                    'seconds': seconds
+                }
+            }
+        }

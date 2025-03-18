@@ -1,5 +1,7 @@
+# src/output_handlers/csv_handler.py
 import csv
 import os
+import logging
 
 class CSVHandler:
     def __init__(self, reverse_mapping):
@@ -8,14 +10,20 @@ class CSVHandler:
         :param reverse_mapping: A dictionary that maps GHL fields to Daxko fields
                                 for use in the second CSV header row.
         """
+        self.logger = logging.getLogger(__name__)
         self.reverse_mapping = reverse_mapping
+
+        # Create csv directory if it doesn't exist
+        if not os.path.exists('csv'):
+            os.makedirs('csv')
+            self.logger.info("Created 'csv' directory")
 
     def write_csv(self, data_dict, timestamp):
         """
         Write transformed data to CSV files, separating valid and invalid records.
         :param data_dict: Dictionary containing 'valid' and 'invalid' record lists
         :param timestamp: Timestamp string for naming the CSV files
-        :return: Tuple of (valid_file_path, invalid_file_path)
+        :return: List of written file paths
         """
         valid_filename = f"transformed_data_{timestamp}.csv"
         invalid_filename = f"invalid_data_{timestamp}.csv"
@@ -38,6 +46,9 @@ class CSVHandler:
         """
         Helper method to write a single CSV file.
         """
+        # Create full filepath in csv directory
+        filepath = os.path.join('csv', filename)
+
         # Exclude these fields from the CSV
         excluded_fields = {"membership_type"} | {
             k
@@ -50,7 +61,7 @@ class CSVHandler:
         fieldnames = [field for field in all_fieldnames if field not in excluded_fields]
 
         try:
-            with open(filename, mode="w", newline="", encoding="utf-8") as csvfile:
+            with open(filepath, mode="w", newline="", encoding="utf-8") as csvfile:
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
                 # Write GHL header row (row 1)
@@ -71,13 +82,13 @@ class CSVHandler:
                     }
                     writer.writerow(filtered_row)
 
-                print(f"Data successfully written to {filename}")
-                return filename
+                self.logger.info(f"Data successfully written to {filepath}")
+                return filepath
 
         except ValueError as e:
-            print(f"Error: {e}")
+            self.logger.error(f"Error: {e}")
             raise
 
         except IOError as e:
-            print(f"Error writing CSV file: {e}")
+            self.logger.error(f"Error writing CSV file: {e}")
             raise
