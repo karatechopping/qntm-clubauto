@@ -11,25 +11,49 @@ import glob
 
 # Define the mappings (Daxko -> GHL)
 field_mappings = {
-    # Standard fields
+    # Standard Fields
     "FirstName": "firstName",
     "LastName": "lastName",
     "Email": "email",
     "PhoneCell": [
         "phone",
-        {"ghl_field": "cellPhone", "ghl_id": "OzwZRpooGyR8Ayrc84u4"},
+        {
+            "ghl_field": "cellPhone",
+            "ghl_id": "OzwZRpooGyR8Ayrc84u4"
+        },
     ],
     "StreetAddress": "address1",
     "City": "city",
     "State": "state",
-    "Gender": "gender",
-    "Zip": ["postalCode", {"ghl_field": "zip", "ghl_id": "TAD26hyktLxWKZa9tOUS"}],
-    "PhoneHome": {"ghl_field": "homePhone", "ghl_id": "SCniAw3rl6DU6SH90OJi"},
-    "PhoneWork": {"ghl_field": "workPhone", "ghl_id": "vFOXH73DDi9WOabRLsNp"},
-    "UserGroupName": {"ghl_field": "membership_type", "ghl_id": "e2f0o6TtMCkoKvLipmrs"},
-    # CA fields
-    "Status": {"ghl_field": "ca_status", "ghl_id": "UB1ZC4lhT454zMArPudE"},
-    "SystemId": {"ghl_field": "ca_systemidnum", "ghl_id": "HlknhU06tIHsPNe0wmqT"},
+    "Zip": [
+        "postalCode",
+        {
+            "ghl_field": "zip",
+            "ghl_id": "TAD26hyktLxWKZa9tOUS"
+        }
+    ],
+    "PhoneHome": {
+        "ghl_field": "homePhone",
+        "ghl_id": "SCniAw3rl6DU6SH90OJi"
+    },
+    "PhoneWork": {
+        "ghl_field": "workPhone",
+        "ghl_id": "vFOXH73DDi9WOabRLsNp"
+    },
+    "Gender": {
+        "ghl_field": "what_is_your_gender",
+        "ghl_id": "O8Qy4nDKAtlUURXUiMHo"
+    },
+
+    # CA Fields
+    "Status": {
+        "ghl_field": "ca_status",
+        "ghl_id": "UB1ZC4lhT454zMArPudE"
+    },
+    "SystemId": {
+        "ghl_field": "ca_systemidnum",
+        "ghl_id": "HlknhU06tIHsPNe0wmqT"
+    },
     "OptOutStatus": {
         "ghl_field": "optoutstatus",
         "ghl_id": "7SXK1pY4CNzPyFndQOAv"
@@ -42,6 +66,8 @@ field_mappings = {
         "ghl_field": "last_api_update",
         "ghl_id": "P6Yy2NTAwZjBJ6yaW1at"
     },
+
+    # Membership Types
     "membership_type_1": {
         "ghl_field": "ca_membership_type_1",
         "ghl_id": "wh6FNDp8VRuKRprDX7FS"
@@ -61,8 +87,9 @@ field_mappings = {
     "membership_type_5": {
         "ghl_field": "ca_membership_type_5",
         "ghl_id": "mTPYdH5By5gTOZgN9hHL"
-    }
+    },
 }
+
 
 # Generate input_fields for fetcher
 input_fields = list(field_mappings.keys())
@@ -194,7 +221,7 @@ if __name__ == "__main__":
         run_csv=True,
         run_ghl=True,
         run_email=False,
-        sample_size=10  # Set to -1 for all records
+        sample_size=1  # Set to -1 for all records
     )
 
     # Tidy up old CSV and log files
