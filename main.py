@@ -168,7 +168,7 @@ if __name__ == "__main__":
         run_csv=True,
         run_ghl=True,
         run_email=True,
-        sample_size=20  # Set to -1 for all records
+        sample_size=-1  # Set to -1 for all records
     )
 
     # Tidy up old CSV and log files
