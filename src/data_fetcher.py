@@ -5,7 +5,7 @@ import sys
 from datetime import datetime
 
 PAGESIZE = 1000
-MAXPAGES = 100
+MAXPAGES = 10
 
 
 class DataFetcher:

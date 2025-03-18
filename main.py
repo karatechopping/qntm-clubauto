@@ -6,7 +6,6 @@ from src.output_handlers.email_handler import EmailHandler
 from src.output_handlers.ghl_handler import GHLHandler
 
 # Define the mappings (Daxko -> GHL)
-# In main.py
 field_mappings = {
     # Standard GHL fields
     "FirstName": "firstName",
@@ -36,10 +35,8 @@ field_mappings = {
     },
 }
 
-
 # Generate input_fields for fetcher
 input_fields = list(field_mappings.keys())
-
 
 # Create reverse mapping for CSV row 2
 def create_reverse_mapping(field_mappings):
@@ -58,16 +55,19 @@ def create_reverse_mapping(field_mappings):
             reverse_map[ghl_mapping["ghl_field"]] = daxko_field
     return reverse_map
 
-
 def main():
+    print("Starting main function...")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    print(f"Timestamp created: {timestamp}")
 
     # Initialize components
+    print("Initializing components...")
     fetcher = DataFetcher()
     transformer = DataTransformer(field_mappings)
     csv_handler = CSVHandler(create_reverse_mapping(field_mappings))
     email_handler = EmailHandler()
     ghl_handler = GHLHandler()
+    print("Components initialized")
 
     try:
         # Step 1: Fetch raw data from Daxko
@@ -80,21 +80,22 @@ def main():
             # Step 2: Transform the data
             print("Transforming data...")
             transformed_data = transformer.transform_data(raw_data["data"])
-            print(f"Transformed {len(transformed_data)} unique contacts")
+            print(f"Transformed {len(transformed_data['valid'])} valid contacts")
+            print(f"Found {len(transformed_data['invalid'])} invalid contacts")
 
             # Step 3: Write to CSV
             print("Writing data to CSV...")
-            csv_path = csv_handler.write_csv(transformed_data, timestamp)
-            print(f"CSV file created: {csv_path}")
+            csv_files = csv_handler.write_csv(transformed_data, timestamp)
+            print(f"CSV files created: {csv_files}")
 
             # Step 4: Send email
-            print("Sending email with CSV attachment...")
-            email_handler.send_report(csv_path, timestamp)
+            print("Sending email with CSV attachments...")
+            email_handler.send_report(csv_files, timestamp)
             print("Email sent successfully")
 
-            # Step 5: Update GHL via API
+            # Step 5: Update GHL via API (only valid contacts)
             print("Processing contacts in GHL...")
-            ghl_results = ghl_handler.process_contacts(transformed_data)
+            ghl_results = ghl_handler.process_contacts(transformed_data['valid'])
             print("GHL processing complete")
 
         else:
@@ -104,6 +105,7 @@ def main():
         print(f"Error during process: {e}")
         raise
 
-
 if __name__ == "__main__":
+    print("Script starting...")
     main()
+    print("Script completed")

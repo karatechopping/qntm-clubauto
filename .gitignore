@@ -1,4 +1,6 @@
-venv/
+copies/
+logs/
+.venv/
 *.csv
 __pycache__/
 *.pyc

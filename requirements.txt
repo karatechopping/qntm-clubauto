@@ -1,6 +1,7 @@
 # Core dependencies
 requests==2.31.0
 python-dotenv==1.0.0
+aiohttp>=3.8.0
 
 # Date/Time handling
 pytz==2024.1
@@ -17,7 +18,6 @@ ratelimit==2.2.1
 tenacity==8.2.3
 
 # Environment and configuration
-python-dotenv==1.0.0
 pyyaml==6.0.1
 
 # Optional development dependencies

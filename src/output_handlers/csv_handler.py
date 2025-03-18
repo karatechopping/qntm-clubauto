@@ -1,7 +1,6 @@
 import csv
 import os
 
-
 class CSVHandler:
     def __init__(self, reverse_mapping):
         """
@@ -11,12 +10,33 @@ class CSVHandler:
         """
         self.reverse_mapping = reverse_mapping
 
-    def write_csv(self, transformed_data, timestamp):
+    def write_csv(self, data_dict, timestamp):
         """
-        Write transformed data to a CSV file while excluding certain fields.
-        :param transformed_data: The transformed data.
-        :param timestamp: Timestamp string for naming the CSV file.
-        :return: Path to the created CSV file.
+        Write transformed data to CSV files, separating valid and invalid records.
+        :param data_dict: Dictionary containing 'valid' and 'invalid' record lists
+        :param timestamp: Timestamp string for naming the CSV files
+        :return: Tuple of (valid_file_path, invalid_file_path)
+        """
+        valid_filename = f"transformed_data_{timestamp}.csv"
+        invalid_filename = f"invalid_data_{timestamp}.csv"
+
+        files_written = []
+
+        # Process valid records
+        if data_dict['valid']:
+            valid_file = self._write_single_csv(data_dict['valid'], valid_filename)
+            files_written.append(valid_file)
+
+        # Process invalid records
+        if data_dict['invalid']:
+            invalid_file = self._write_single_csv(data_dict['invalid'], invalid_filename)
+            files_written.append(invalid_file)
+
+        return files_written
+
+    def _write_single_csv(self, transformed_data, filename):
+        """
+        Helper method to write a single CSV file.
         """
         # Exclude these fields from the CSV
         excluded_fields = {"membership_type"} | {
@@ -28,8 +48,6 @@ class CSVHandler:
         # Get fieldnames by filtering out excluded fields
         all_fieldnames = transformed_data[0].keys() if transformed_data else []
         fieldnames = [field for field in all_fieldnames if field not in excluded_fields]
-
-        filename = f"transformed_data_{timestamp}.csv"
 
         try:
             with open(filename, mode="w", newline="", encoding="utf-8") as csvfile:
