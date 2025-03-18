@@ -1,5 +1,6 @@
 import re
-
+import pytz
+from datetime import datetime
 class DataTransformer:
     def __init__(self, field_mappings):
         """
@@ -82,6 +83,13 @@ class DataTransformer:
                 elif isinstance(mapping, dict):
                     transformed_record[mapping["ghl_field"]] = value
                     transformed_record[f"{mapping['ghl_field']}_id"] = mapping["ghl_id"]
+
+            # Add Last API Update timestamp
+            last_api_mapping = self.field_mappings["LastAPIUpdate"]
+            central_tz = pytz.timezone('America/Chicago')
+            today_date = datetime.now(central_tz).strftime("%Y-%m-%d")
+            transformed_record[last_api_mapping["ghl_field"]] = today_date
+            transformed_record[f"{last_api_mapping['ghl_field']}_id"] = last_api_mapping["ghl_id"]
 
             # Add membership types
             for i in range(5):

@@ -43,31 +43,7 @@ class GHLHandler:
         self.window_start_time = time.time()
         self.requests_in_current_window = 0
 
-        self.setup_logging()
-
-    def setup_logging(self):
-        if not os.path.exists('logs'):
-            os.makedirs('logs')
-
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        log_file = f'logs/ghl_processing_{timestamp}.log'
-
-        # File handler - only for contact processing status
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(logging.INFO)  # Will catch INFO level messages
-        file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
-
-        # Console handler - only for summary and errors
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.WARNING)  # Will only catch WARNING and ERROR
-        console_handler.setFormatter(logging.Formatter('%(message)s'))
-
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)  # Allow INFO level messages
-        self.logger.addHandler(file_handler)
-        self.logger.addHandler(console_handler)
-
-        print(f"Starting GHL Processing - Log file: {log_file}")
+        self.logger.info("Starting GHL Processing")
 
     async def _update_rate_limits(self, response):
         """Update rate limit tracking based on response headers"""
@@ -83,7 +59,7 @@ class GHLHandler:
 
         ghl_contact = {
             "locationId": self.location_id,
-            "tags": ["brett-api-test"],
+            "tags": ["api"],
         }
 
         standard_fields = ["firstName", "lastName", "email", "phone",
@@ -94,6 +70,7 @@ class GHLHandler:
                 ghl_contact[field] = contact[field]
 
         custom_fields = []
+
         for field, value in contact.items():
             if field.endswith("_id") and contact.get(field.replace("_id", "")):
                 custom_fields.append({

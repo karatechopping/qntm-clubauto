@@ -36,6 +36,10 @@ field_mappings = {
         "ghl_field": "delivery_method",
         "ghl_id": "NX3D1NYKLdDmOJYwGlgb",
     },
+    "LastAPIUpdate": {
+        "ghl_field": "last_api_update",
+        "ghl_id": "P6Yy2NTAwZjBJ6yaW1at"
+    },
 }
 
 # Generate input_fields for fetcher
@@ -165,10 +169,10 @@ if __name__ == "__main__":
 
     # Run the main process
     results = main(
-        run_csv=True,
+        run_csv=False,
         run_ghl=True,
-        run_email=True,
-        sample_size=-1  # Set to -1 for all records
+        run_email=False,
+        sample_size=10  # Set to -1 for all records
     )
 
     # Tidy up old CSV and log files
