@@ -11,6 +11,7 @@ import glob
 
 # Define the mappings (Daxko -> GHL)
 field_mappings = {
+    # Standard fields
     "FirstName": "firstName",
     "LastName": "lastName",
     "Email": "email",
@@ -26,20 +27,41 @@ field_mappings = {
     "PhoneHome": {"ghl_field": "homePhone", "ghl_id": "SCniAw3rl6DU6SH90OJi"},
     "PhoneWork": {"ghl_field": "workPhone", "ghl_id": "vFOXH73DDi9WOabRLsNp"},
     "UserGroupName": {"ghl_field": "membership_type", "ghl_id": "e2f0o6TtMCkoKvLipmrs"},
-    "Status": [
-        {"ghl_field": "member_activeinactive", "ghl_id": "a42q57p3xl4uSYKThK5C"},
-        {"ghl_field": "member_status", "ghl_id": "zsoJAoVViTFLHqgexbLl"},
-    ],
-    "SystemId": {"ghl_field": "member_number", "ghl_id": "cewzf3ASjgkju43LCaB0"},
-    "OptOutStatus": {"ghl_field": "opt_out_status", "ghl_id": "7SXK1pY4CNzPyFndQOAv"},
+    # CA fields
+    "Status": {"ghl_field": "ca_status", "ghl_id": "UB1ZC4lhT454zMArPudE"},
+    "SystemId": {"ghl_field": "ca_systemidnum", "ghl_id": "HlknhU06tIHsPNe0wmqT"},
+    "OptOutStatus": {
+        "ghl_field": "optoutstatus",
+        "ghl_id": "7SXK1pY4CNzPyFndQOAv"
+    },
     "DeliveryMethod": {
-        "ghl_field": "delivery_method",
-        "ghl_id": "NX3D1NYKLdDmOJYwGlgb",
+        "ghl_field": "deliverymethod",
+        "ghl_id": "NX3D1NYKLdDmOJYwGlgb"
     },
     "LastAPIUpdate": {
         "ghl_field": "last_api_update",
         "ghl_id": "P6Yy2NTAwZjBJ6yaW1at"
     },
+    "membership_type_1": {
+        "ghl_field": "ca_membership_type_1",
+        "ghl_id": "wh6FNDp8VRuKRprDX7FS"
+    },
+    "membership_type_2": {
+        "ghl_field": "ca_membership_type_2",
+        "ghl_id": "nQcW5wNd6k6h6afuF0MI"
+    },
+    "membership_type_3": {
+        "ghl_field": "ca_membership_type_3",
+        "ghl_id": "BnmHQGkPRo67GXcseE5p"
+    },
+    "membership_type_4": {
+        "ghl_field": "ca_membership_type_4",
+        "ghl_id": "o5PWKwvqax6q3RvEBCLK"
+    },
+    "membership_type_5": {
+        "ghl_field": "ca_membership_type_5",
+        "ghl_id": "mTPYdH5By5gTOZgN9hHL"
+    }
 }
 
 # Generate input_fields for fetcher
@@ -171,8 +193,8 @@ if __name__ == "__main__":
     results = main(
         run_csv=True,
         run_ghl=True,
-        run_email=True,
-        sample_size=-1  # Set to -1 for all records
+        run_email=False,
+        sample_size=10  # Set to -1 for all records
     )
 
     # Tidy up old CSV and log files

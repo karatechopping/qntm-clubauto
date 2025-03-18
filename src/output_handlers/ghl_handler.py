@@ -63,7 +63,7 @@ class GHLHandler:
         }
 
         standard_fields = ["firstName", "lastName", "email", "phone",
-                         "address1", "city", "state", "gender", "postalCode"]
+                        "address1", "city", "state", "gender", "postalCode"]
 
         for field in standard_fields:
             if contact.get(field):
@@ -71,17 +71,30 @@ class GHLHandler:
 
         custom_fields = []
 
+        # Debug: Print all fields in the contact
+        print(f"DEBUG - All fields in contact: {sorted(contact.keys())}")
+        if 'ca_systemidnum' in contact:
+            print(f"DEBUG - ca_systemidnum value: {contact['ca_systemidnum']}")
+        if 'ca_systemidnum_id' in contact:
+            print(f"DEBUG - ca_systemidnum_id value: {contact['ca_systemidnum_id']}")
+
         for field, value in contact.items():
-            if field.endswith("_id") and contact.get(field.replace("_id", "")):
+            if field.endswith("_id") and field.replace("_id", "") in contact:
+                base_field = field.replace("_id", "")
+                print(f"DEBUG - Processing custom field: {base_field} with ID: {value}")
                 custom_fields.append({
                     "id": value,
-                    "value": contact[field.replace("_id", "")]
+                    "value": contact[base_field]
                 })
 
         if custom_fields:
             ghl_contact["customFields"] = custom_fields
+            print(f"DEBUG - Final custom fields: {json.dumps(custom_fields, indent=2)}")
+        else:
+            print("DEBUG - No custom fields found!")
 
         return ghl_contact
+
 
     async def _make_api_call(self, session, contact_data, retry_count=0):
         try:
@@ -132,7 +145,7 @@ class GHLHandler:
                     "name": f"{contact.get('firstName', '')} {contact.get('lastName', '')}",
                     "email": contact.get('email', ''),
                     "phone": contact.get('phone', ''),
-                    "system_id": contact.get('member_number', 'No ID'),
+                    "system_id": contact.get('ca_systemidnum', 'No ID'),
                     "id": response_json.get('contact', {}).get('id'),
                 }
 
@@ -150,14 +163,15 @@ class GHLHandler:
             except Exception as e:
                 self.logger.error(
                     f"Failed: {contact.get('firstName', '')} {contact.get('lastName', '')} "
-                    f"(ID: {contact.get('member_number', 'No ID')}) - {str(e)}"
+                    f"(ID: {contact.get('ca_systemidnum', 'No ID')}) - {str(e)}"
                 )
                 self.failed_contacts.append({
                     "name": f"{contact.get('firstName', '')} {contact.get('lastName', '')}",
-                    "system_id": contact.get('member_number', 'No ID'),
+                    "system_id": contact.get('ca_systemidnum', 'No ID'),
                     "error": str(e)
                 })
                 return None
+
 
     async def _process_all_contacts(self, contacts):
         timeout = aiohttp.ClientTimeout(total=60)
