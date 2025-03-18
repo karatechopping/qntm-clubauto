@@ -169,10 +169,10 @@ if __name__ == "__main__":
 
     # Run the main process
     results = main(
-        run_csv=False,
+        run_csv=True,
         run_ghl=True,
-        run_email=False,
-        sample_size=10  # Set to -1 for all records
+        run_email=True,
+        sample_size=-1  # Set to -1 for all records
     )
 
     # Tidy up old CSV and log files
