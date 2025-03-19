@@ -9,6 +9,7 @@ import logging
 import os
 import glob
 
+
 # Define the mappings (Daxko -> GHL)
 field_mappings = {
     # Standard Fields
@@ -118,6 +119,11 @@ def main(run_csv=True, run_ghl=True, run_email=True, sample_size=-1):
     logger.info("Starting processing run")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     logger.info(f"Timestamp created: {timestamp}")
+
+
+    logger.info(f"Current ENV: SMTP_PASSWORD exists? {'SMTP_PASSWORD' in os.environ}")
+    logger.info(f"PYTHONPATH: {os.environ.get('PYTHONPATH')}") 
+    logger.info(f"Current working directory: {os.getcwd()}")
 
     # Initialize components
     logger.info("Initializing components...")
