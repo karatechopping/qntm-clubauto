@@ -8,7 +8,7 @@ from src.logger_config import setup_logging
 import logging
 import os
 import glob
-
+import pytz
 
 # Define the mappings (Daxko -> GHL)
 field_mappings = {
@@ -117,7 +117,8 @@ def main(run_csv=True, run_ghl=True, run_email=True, sample_size=-1):
     logger = logging.getLogger(__name__)
 
     logger.info("Starting processing run")
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    central_tz = pytz.timezone('America/Chicago')
+    timestamp = datetime.now(central_tz).strftime("%Y-%m-%d_%H%M%S")
     logger.info(f"Timestamp created: {timestamp}")
 
 
