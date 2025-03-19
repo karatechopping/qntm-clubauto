@@ -71,17 +71,9 @@ class GHLHandler:
 
         custom_fields = []
 
-        # Debug: Print all fields in the contact
-        print(f"DEBUG - All fields in contact: {sorted(contact.keys())}")
-        if 'ca_systemidnum' in contact:
-            print(f"DEBUG - ca_systemidnum value: {contact['ca_systemidnum']}")
-        if 'ca_systemidnum_id' in contact:
-            print(f"DEBUG - ca_systemidnum_id value: {contact['ca_systemidnum_id']}")
-
         for field, value in contact.items():
             if field.endswith("_id") and field.replace("_id", "") in contact:
                 base_field = field.replace("_id", "")
-                print(f"DEBUG - Processing custom field: {base_field} with ID: {value}")
                 custom_fields.append({
                     "id": value,
                     "value": contact[base_field]
@@ -89,9 +81,6 @@ class GHLHandler:
 
         if custom_fields:
             ghl_contact["customFields"] = custom_fields
-            print(f"DEBUG - Final custom fields: {json.dumps(custom_fields, indent=2)}")
-        else:
-            print("DEBUG - No custom fields found!")
 
         return ghl_contact
 
