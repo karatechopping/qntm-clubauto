@@ -11,3 +11,4 @@ __pycache__/
 *.pyc
 *.xl*
 .env
+run_cron.sh

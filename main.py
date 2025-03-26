@@ -12,7 +12,7 @@ import pytz
 from dotenv import load_dotenv
 
 # Load environment variables from .env file if it exists
-load_dotenv()
+load_dotenv(override=True)
 
 # Define the mappings (Daxko -> GHL)
 field_mappings = {
@@ -117,7 +117,7 @@ def main(run_csv=True, run_ghl=True, run_email=True, sample_size=-1):
     logger = logging.getLogger(__name__)
 
     logger.info("Starting processing run")
-    logger.info(f"Starting processing run. GHL_LOCATION: {os.environ.get('GHL_LOCATION', 'Not Set')}")
+    logger.info(f"GHL_LOCATION: {os.environ.get('GHL_LOCATION', 'Not Set')}")
 
     central_tz = pytz.timezone('America/Chicago')
     timestamp = datetime.now(central_tz).strftime("%Y-%m-%d_%H%M%S")
@@ -229,7 +229,7 @@ if __name__ == "__main__":
     results = main(
         run_csv=True,
         run_ghl=True,
-        run_email=True,
+        run_email=False,
         sample_size=-1  # Set to -1 for all records
     )
 
