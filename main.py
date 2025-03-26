@@ -9,6 +9,10 @@ import logging
 import os
 import glob
 import pytz
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if it exists
+load_dotenv()
 
 # Define the mappings (Daxko -> GHL)
 field_mappings = {
@@ -226,7 +230,7 @@ if __name__ == "__main__":
         run_csv=True,
         run_ghl=True,
         run_email=True,
-        sample_size=10  # Set to -1 for all records
+        sample_size=-1  # Set to -1 for all records
     )
 
     # Tidy up old CSV and log files
