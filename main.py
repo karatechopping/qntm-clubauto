@@ -113,6 +113,8 @@ def main(run_csv=True, run_ghl=True, run_email=True, sample_size=-1):
     logger = logging.getLogger(__name__)
 
     logger.info("Starting processing run")
+    logger.info(f"Starting processing run. GHL_LOCATION: {os.environ.get('GHL_LOCATION', 'Not Set')}")
+
     central_tz = pytz.timezone('America/Chicago')
     timestamp = datetime.now(central_tz).strftime("%Y-%m-%d_%H%M%S")
     logger.info(f"Timestamp created: {timestamp}")
@@ -224,7 +226,7 @@ if __name__ == "__main__":
         run_csv=True,
         run_ghl=True,
         run_email=True,
-        sample_size=-1  # Set to -1 for all records
+        sample_size=10  # Set to -1 for all records
     )
 
     # Tidy up old CSV and log files
