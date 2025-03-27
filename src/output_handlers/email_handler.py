@@ -30,21 +30,23 @@ class EmailHandler:
             self.logger.error("SMTP_PASSWORD not found in environment variables")
             raise
 
-        self.recipient = "brett@marketingtech.pro"
+        self.recipient = ["brett@marketingtech.pro", "richard@yalldigital.com"]
 
-    def send_report(self, results, timestamp):
+    def send_report(self, results, timestamp, run_csv, attach_csv):
         """
         Send report email with comprehensive results
         :param results: Dictionary containing all process results
         :param timestamp: Timestamp string
+        :param run_csv: Boolean indicating if CSV processing was run
+        :param attach_csv: Boolean indicating if CSV should be attached
         """
         self.logger.info(f"Attempting to send email with results: {results}")
 
         try:
             msg = MIMEMultipart()
             msg["From"] = self.username
-            msg["To"] = self.recipient
             msg["Subject"] = f"QNTM API Process Report {timestamp}"
+            msg["To"] = ", ".join(self.recipient)
 
             # Create detailed body
             body = f"Process Report for {timestamp}\n"
@@ -61,6 +63,7 @@ class EmailHandler:
                     body += f"Files generated:\n"
                     for file in results['csv_files']:
                         body += f"- {os.path.basename(file)}\n"
+                body += f"Emailing CSV: {'Turned On' if attach_csv else 'Turned Off'}\n"
             else:
                 body += "Status: Skipped\n"
             body += "\n"
@@ -90,12 +93,15 @@ class EmailHandler:
             body += "-" * 20 + "\n"
             for component, status in results['status'].items():
                 if component != 'email':  # Skip email status
-                    body += f"{component.upper()}: {status}\n"
+                    summary_line = f"{component.upper()}: {status}"
+                    if run_csv and component == 'csv':
+                        summary_line += f", Emailing {'ON' if attach_csv else 'OFF'}"
+                    body += f"{summary_line}\n"
 
             msg.attach(MIMEText(body, "plain"))
 
-            # Attach CSV files if they exist
-            if results['csv_files']:
+            # Attach CSV files if they exist and both run_csv and attach_csv are True
+            if run_csv and attach_csv and results['csv_files']:
                 self.logger.info("Adding CSV attachments...")
                 for filepath in results['csv_files']:
                     if os.path.exists(filepath):

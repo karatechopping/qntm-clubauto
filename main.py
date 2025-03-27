@@ -111,7 +111,7 @@ def create_reverse_mapping(field_mappings):
             reverse_map[ghl_mapping["ghl_field"]] = daxko_field
     return reverse_map
 
-def main(run_csv=True, run_ghl=True, run_email=True, sample_size=-1):
+def main(run_csv=True, run_ghl=True, run_email=True, attach_csv=True, sample_size=-1):
     # Setup logging first
     log_file = setup_logging()
     logger = logging.getLogger(__name__)
@@ -200,7 +200,7 @@ def main(run_csv=True, run_ghl=True, run_email=True, sample_size=-1):
             if run_email:
                 logger.info("Sending email report...")
                 email_handler = EmailHandler()
-                email_handler.send_report(results, timestamp)
+                email_handler.send_report(results, timestamp, run_csv, attach_csv)
                 logger.info("Email sent successfully")
             else:
                 logger.info("Email sending skipped")
@@ -229,7 +229,8 @@ if __name__ == "__main__":
     results = main(
         run_csv=True,
         run_ghl=True,
-        run_email=False,
+        run_email=True,
+        attach_csv=False,
         sample_size=-1  # Set to -1 for all records
     )
 
