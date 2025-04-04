@@ -1,4 +1,5 @@
-from datetime import datetime
+import argparse
+from datetime import datetime, timedelta
 from src.data_fetcher import DataFetcher
 from src.data_transformer import DataTransformer
 from src.output_handlers.csv_handler import CSVHandler
@@ -11,7 +12,6 @@ import glob
 import pytz
 from dotenv import load_dotenv
 import sys
-from datetime import datetime, timedelta
 
 # Load environment variables from .env file if it exists
 load_dotenv(override=True)
@@ -92,8 +92,6 @@ field_mappings = {
     },
 }
 
-
-
 # Generate input_fields for fetcher
 input_fields = list(field_mappings.keys())
 
@@ -113,12 +111,23 @@ def create_reverse_mapping(field_mappings):
             reverse_map[ghl_mapping["ghl_field"]] = daxko_field
     return reverse_map
 
-def main(run_csv=True, run_ghl=True, run_email=True, attach_csv=True, sample_size=-1, days_back=None):
+def main():
+    parser = argparse.ArgumentParser(description="Run data processing script.")
+    parser.add_argument('--run_csv', type=lambda x: (str(x).lower() == 'true'), default=False, help='Whether to run CSV processing.')
+    parser.add_argument('--run_ghl', type=lambda x: (str(x).lower() == 'true'), default=False, help='Whether to run GHL processing.')
+    parser.add_argument('--run_email', type=lambda x: (str(x).lower() == 'true'), default=False, help='Whether to run email processing.')
+    parser.add_argument('--attach_csv', type=lambda x: (str(x).lower() == 'true'), default=False, help='Whether to attach CSV to email.')
+    parser.add_argument('--sample_size', type=int, default=-1, help='Sample size for processing.')
+    parser.add_argument('--days_back', type=int, default=None, help='Number of days to go back.')
+
+    args = parser.parse_args()
+
     # Setup logging first
     log_file = setup_logging()
     logger = logging.getLogger(__name__)
 
     # Determine criteria_fields based on days_back
+    days_back = args.days_back
     if days_back is not None:
         try:
             days_back = int(days_back)
@@ -158,7 +167,6 @@ def main(run_csv=True, run_ghl=True, run_email=True, attach_csv=True, sample_siz
     timestamp = datetime.now(central_tz).strftime("%Y-%m-%d_%H%M%S")
     logger.info(f"Timestamp created: {timestamp}")
 
-
     logger.info(f"Current ENV: SMTP_PASSWORD exists? {'SMTP_PASSWORD' in os.environ}")
     logger.info(f"PYTHONPATH: {os.environ.get('PYTHONPATH')}")
     logger.info(f"Current working directory: {os.getcwd()}")
@@ -197,6 +205,7 @@ def main(run_csv=True, run_ghl=True, run_email=True, attach_csv=True, sample_siz
             transformed_data = transformer.transform_data(raw_data["data"])
 
             # Apply sample size if specified
+            sample_size = args.sample_size
             if sample_size > 0:
                 transformed_data['valid'] = transformed_data['valid'][:sample_size]
                 logger.info(f"Applied sample size: {sample_size}")
@@ -205,6 +214,7 @@ def main(run_csv=True, run_ghl=True, run_email=True, attach_csv=True, sample_siz
             logger.info(f"Found {len(transformed_data['invalid'])} invalid contacts")
 
             # Step 3: Write to CSV (if enabled)
+            run_csv = args.run_csv
             if run_csv:
                 logger.info("Writing data to CSV...")
                 csv_handler = CSVHandler(create_reverse_mapping(field_mappings))
@@ -220,6 +230,7 @@ def main(run_csv=True, run_ghl=True, run_email=True, attach_csv=True, sample_siz
                 logger.info("CSV generation skipped")
 
             # Step 4: Update GHL via API (if enabled)
+            run_ghl = args.run_ghl
             if run_ghl:
                 logger.info("Processing contacts in GHL...")
                 ghl_handler = GHLHandler()
@@ -232,6 +243,8 @@ def main(run_csv=True, run_ghl=True, run_email=True, attach_csv=True, sample_siz
                 logger.info("GHL processing skipped")
 
             # Step 5: Send email (if enabled)
+            run_email = args.run_email
+            attach_csv = args.attach_csv
             if run_email:
                 logger.info("Sending email report...")
                 email_handler = EmailHandler()
@@ -260,22 +273,7 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     logger.info("Script starting...")
 
-
-    # Get days_back from command line arguments
-    if len(sys.argv) > 1:
-        days_back = sys.argv[1]
-    else:
-        days_back = None
-
-    # Run the main process
-    results = main(
-        run_csv=True,
-        run_ghl=False,
-        run_email=False,
-        attach_csv=False,
-        sample_size=-1,  # Set to -1 for all records
-        days_back=days_back
-    )
+    main()
 
     # Tidy up old CSV and log files
     logger.info("Tidying up old files...")
