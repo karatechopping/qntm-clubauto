@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 import pytz  # Make sure this is installed
 
-def setup_logging():
+def setup_logging(filename=None):
     try:
         if not os.path.exists('logs'):
             os.makedirs('logs')
@@ -18,7 +18,7 @@ def setup_logging():
             print("Warning: Timezone conversion issue. Falling back to default timezone.")
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 
-        log_file = f'logs/process_{timestamp}.log'
+        log_file = filename if filename else f'logs/process_{timestamp}.log'
 
         # Create a test file to verify write permissions
         try:
@@ -27,7 +27,7 @@ def setup_logging():
         except Exception as e:
             print(f"Error creating log file: {e}")
             # Fallback to a more accessible location if needed
-            log_file = f'process_{timestamp}.log'
+            log_file = filename if filename else f'process_{timestamp}.log'
             with open(log_file, 'w') as f:
                 f.write('Initializing log file (fallback location)\n')
 

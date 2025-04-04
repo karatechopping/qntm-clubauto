@@ -119,11 +119,13 @@ def main():
     parser.add_argument('--attach_csv', type=lambda x: (str(x).lower() == 'true'), default=False, help='Whether to attach CSV to email.')
     parser.add_argument('--sample_size', type=int, default=-1, help='Sample size for processing.')
     parser.add_argument('--days_back', type=int, default=None, help='Number of days to go back.')
+    parser.add_argument('--run_log', type=lambda x: (str(x).lower() == 'true'), default=True, help='Whether to run logging.')
 
     args = parser.parse_args()
 
     # Setup logging first
-    log_file = setup_logging()
+    run_log = args.run_log
+    log_file = setup_logging(filename="dummy.log") if not run_log else setup_logging()
     logger = logging.getLogger(__name__)
 
     # Determine criteria_fields based on days_back
@@ -259,6 +261,12 @@ def main():
     except Exception as e:
         logger.error(f"Error during process: {e}")
         raise
+
+    finally:
+        if not run_log:
+            if os.path.exists("dummy.log"):
+                os.remove("dummy.log")
+                logger.info("Deleted dummy.log")
 
     return results
 
