@@ -9,7 +9,7 @@ MAXPAGES = 10
 
 
 class DataFetcher:
-    def __init__(self):
+    def __init__(self, criteria_fields=None):
         self.client_id = "prod_qntmfitlife"
         self.client_secret = os.getenv("CLIENT_SECRET")
         if not self.client_secret:
@@ -18,8 +18,10 @@ class DataFetcher:
         self.scope = "CA_qntmfitlife"
         self.grant_type = "client_credentials"
         self.page_size = PAGESIZE
+        self.criteria_fields = criteria_fields or {"user": {"gender": "0"}}
 
     def get_access_token(self):
+
         auth_url = "https://api.partners.daxko.com/auth/token"
         headers = {"Content-Type": "application/json"}
         payload = {
@@ -50,8 +52,6 @@ class DataFetcher:
             "Content-Type": "application/json",
         }
 
-        criteria_fields = {"user": {"gender": "0"}}
-
         all_data = []
         page_number = 1
 
@@ -59,7 +59,7 @@ class DataFetcher:
             payload = {
                 "id": 1,
                 "outputFields": input_fields,
-                "criteriaFields": criteria_fields,
+                "criteriaFields": self.criteria_fields,
                 "pageSize": self.page_size,
                 "pageNumber": page_number,
             }

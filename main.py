@@ -10,6 +10,8 @@ import os
 import glob
 import pytz
 from dotenv import load_dotenv
+import sys
+from datetime import datetime, timedelta
 
 # Load environment variables from .env file if it exists
 load_dotenv(override=True)
@@ -111,10 +113,43 @@ def create_reverse_mapping(field_mappings):
             reverse_map[ghl_mapping["ghl_field"]] = daxko_field
     return reverse_map
 
-def main(run_csv=True, run_ghl=True, run_email=True, attach_csv=True, sample_size=-1):
+def main(run_csv=True, run_ghl=True, run_email=True, attach_csv=True, sample_size=-1, days_back=None):
     # Setup logging first
     log_file = setup_logging()
     logger = logging.getLogger(__name__)
+
+    # Determine criteria_fields based on days_back
+    if days_back is not None:
+        try:
+            days_back = int(days_back)
+            if days_back > 0:
+                central_tz = pytz.timezone('America/Chicago')
+                today = datetime.now(central_tz)
+                from_date = today - timedelta(days=days_back - 1)
+                to_date_str = today.strftime("%m/%d/%Y")
+                from_date_str = from_date.strftime("%m/%d/%Y")
+                criteria_fields = {
+                    "user": {
+                        "profileCreation": {
+                            "from": from_date_str,
+                            "to": to_date_str
+                        }
+                    }
+                }
+                logger.info(f"Using date range criteria: from {from_date_str} to {to_date_str}")
+                print(f"Using date range criteria: from {from_date_str} to {to_date_str}")
+            else:
+                criteria_fields = {"user": {"gender": "0"}}
+                logger.info("Using default gender criteria")
+                print("Using default gender criteria")
+        except ValueError:
+            criteria_fields = {"user": {"gender": "0"}}
+            logger.info("Invalid days_back value. Using default gender criteria")
+            print("Invalid days_back value. Using default gender criteria")
+    else:
+        criteria_fields = {"user": {"gender": "0"}}
+        logger.info("No days_back provided. Using default gender criteria")
+        print("No days_back provided. Using default gender criteria")
 
     logger.info("Starting processing run")
     logger.info(f"GHL_LOCATION: {os.environ.get('GHL_LOCATION', 'Not Set')}")
@@ -130,7 +165,7 @@ def main(run_csv=True, run_ghl=True, run_email=True, attach_csv=True, sample_siz
 
     # Initialize components
     logger.info("Initializing components...")
-    fetcher = DataFetcher()
+    fetcher = DataFetcher(criteria_fields)
     transformer = DataTransformer(field_mappings)
 
     # Results tracking
@@ -225,13 +260,21 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     logger.info("Script starting...")
 
+
+    # Get days_back from command line arguments
+    if len(sys.argv) > 1:
+        days_back = sys.argv[1]
+    else:
+        days_back = None
+
     # Run the main process
     results = main(
         run_csv=True,
-        run_ghl=True,
-        run_email=True,
+        run_ghl=False,
+        run_email=False,
         attach_csv=False,
-        sample_size=-1  # Set to -1 for all records
+        sample_size=-1,  # Set to -1 for all records
+        days_back=days_back
     )
 
     # Tidy up old CSV and log files
