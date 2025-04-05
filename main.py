@@ -70,6 +70,10 @@ field_mappings = {
         "ghl_field": "last_api_update",
         "ghl_id": "DZXwU1OJbdBCzEXziB04"
     },
+    "LiabilityWaiver": {
+        "ghl_field": "ca_liabilitywaiver",
+        "ghl_id": "6wwvA6psYtQ0srExNaqJ"
+    },
     "UserGroupName": {
         "ghl_field": "ca_membership_type_1",
         "ghl_id": "DxXkT3nt0Za5eFMCj0v2"
