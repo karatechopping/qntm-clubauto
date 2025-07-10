@@ -1,85 +1,114 @@
-# clubauto
-.
 # Club Auto Data Integration
 
-A Python application for syncing member data between Daxko and Go High Level (GHL), with CSV export and email notifications.
+A Python application for syncing member data between Daxko and GoHighLevel (GHL), with CSV export and email notifications.
 
 ## Features
+
 - Fetches member data from Daxko API
-- Transforms data to match GHL field structure
-- Outputs to:
-  - CSV export with email notification
-  - Direct GHL API integration
+- Transforms data to match GHL field structure  
+- Outputs to CSV export and/or direct GHL API integration
+- Email notifications with CSV attachments
+- Real-time webhook processing
+- Rate limiting and error handling
+- Automatic file cleanup
 
-## Prerequisites
-- Python 3.x
-- Environment variables:
-  - `CLIENT_SECRET` (Daxko API)
-  - `GHL_API` (Go High Level API key)
-  - `GHL_LOCATION` (Go High Level location ID)
-  - Email configuration (for CSV reports)
+## Quick Start
 
-## Installation
-1. Clone the repository:
-git clone https://github.com/karatechopping/clubauto.git
-cd clubauto
+1. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-2. Create and activate virtual environment:
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+2. **Set environment variables**:
+   ```bash
+   export CLIENT_SECRET=your_daxko_client_secret
+   export GHL_API=your_ghl_api_key
+   export GHL_LOCATION=your_ghl_location_id
+   ```
 
-3. Install dependencies:
-pip install -r requirements.txt
+3. **Run the application**:
+   ```bash
+   # CSV export only (safe for testing)
+   python main.py --run_csv=True --run_ghl=False --run_email=False --sample_size=10
+   
+   # Full sync to GHL
+   python main.py --run_csv=True --run_ghl=True --run_email=False --sample_size=-1
+   ```
 
-## Processing Order
-The application follows a strict processing sequence:
+## Usage Examples
 
-1. **Data Fetching** (DataFetcher)
-   - Retrieves raw data from Daxko API
-   - Uses pagination to handle large datasets
+### CSV Export Only
+```bash
+python main.py --run_csv=True --run_ghl=False --run_email=False --sample_size=10
+```
 
-2. **Data Transformation** (DataTransformer)
-   - Maps fields according to field_mappings configuration
-   - Prepares standardized data format
+### Sync Recent Changes (1 day back)
+```bash
+python main.py --run_csv=True --run_ghl=True --run_email=False --days_back=1
+```
 
-3. **CSV Generation & Email** (CSVHandler + EmailHandler)
-   - Creates CSV file with transformed data
-   - Emails the CSV report
+### Email Report with CSV
+```bash
+python main.py --run_csv=True --run_ghl=False --run_email=True --attach_csv=True
+```
 
-4. **GHL API Integration** (GHLHandler)
-   - Processes contacts through GHL API
-   - Handles rate limiting and error tracking
+## Configuration
+
+### Required Environment Variables
+
+- `CLIENT_SECRET`: Daxko API client secret
+- `GHL_API`: GoHighLevel API key  
+- `GHL_LOCATION`: GoHighLevel location ID
+
+### Optional Email Variables
+
+- `SMTP_SERVER`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`
+- `EMAIL_FROM`, `EMAIL_TO`
+
+## Command Line Options
+
+- `--run_csv`: Generate CSV files (True/False)
+- `--run_ghl`: Sync to GoHighLevel (True/False)  
+- `--run_email`: Send email reports (True/False)
+- `--attach_csv`: Attach CSV to email (True/False)
+- `--sample_size`: Limit records processed (-1 for all)
+- `--days_back`: Process recent changes only (number of days)
+- `--run_log`: Enable logging (True/False)
+
+## Output Files
+
+- **CSV files**: Stored in `csv/` directory
+- **Log files**: Stored in `logs/` directory
+- **Valid data**: `transformed_data_TIMESTAMP.csv`
+- **Invalid data**: `invalid_data_TIMESTAMP.csv`
 
 ## Project Structure
+
+```
 clubauto/
+├── main.py                 # Main execution script
 ├── src/
-│   ├── __init__.py
-│   ├── data_fetcher.py    # Daxko API integration
-│   ├── data_transformer.py # Data mapping logic
+│   ├── data_fetcher.py     # Daxko API integration
+│   ├── data_transformer.py # Data mapping and validation
+│   ├── logger_config.py    # Logging configuration
 │   └── output_handlers/
 │       ├── csv_handler.py  # CSV generation
 │       ├── email_handler.py # Email notifications
 │       └── ghl_handler.py  # GHL API integration
-├── main.py                # Main execution script
-└── requirements.txt       # Project dependencies
+├── webhook_handler.py      # Real-time webhook processing
+├── run_cron.sh            # Production cron script
+└── run_cron_days_back.sh  # Incremental sync script
+```
 
-## TODO
-- [ ] Add processing option selector (1=CSV only, 2=API only, 3=both)
-- [ ] Add error reporting and retries
-- [ ] Add logging system
-- [ ] Create configuration file for field mappings
-- [ ] Add data validation checks
-- [ ] Implement unit tests
-- [ ] Add detailed API documentation
-- [ ] Create deployment guide
-- [ ] Add monitoring and metrics
-- [ ] Add DND (Do Not Disturb) mapping documentation
-- [ ] Test GHL API with test environment
-- [ ] Add configuration for email templates
-- [ ] Implement proper error handling for all API calls
-- [ ] Add data sanitization for CSV exports
-- [ ] What to do with the different member types
-- [ ] Why is gender not coming through
+## Safety Features
 
-## Field Mappings
-Custom field mappings are configured in `main.py` to transform Daxko fields to GHL format. See field_mappings dictionary for current mapping structure.
+- Email/phone validation prevents invalid data
+- Rate limiting respects API constraints
+- Sample size limits for testing
+- Automatic file cleanup
+- Comprehensive logging
+- Retry logic with exponential backoff
+
+## Support
+
+For issues or questions, check the logs in the `logs/` directory or run with `--sample_size=1` to test with minimal data.
