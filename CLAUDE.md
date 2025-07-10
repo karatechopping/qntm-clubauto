@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a data synchronization system that fetches member data from Daxko (fitness management system) and syncs it to GoHighLevel (GHL) CRM. The application supports CSV export, email notifications, and real-time webhook processing.
+QNTM Club Auto is a data synchronization system that fetches member data from Daxko (fitness management system) and syncs it to GoHighLevel (GHL) CRM. The application supports CSV export, email notifications, and real-time webhook processing.
 
 ## Common Commands
 
@@ -97,14 +97,19 @@ EMAIL_TO=recipient@example.com
 
 ### File Structure
 ```
-src/
-├── data_fetcher.py      # Daxko API integration with pagination
-├── data_transformer.py  # Field mapping and validation logic
-├── logger_config.py     # Centralized logging configuration
-└── output_handlers/
-    ├── csv_handler.py   # CSV generation with dual output format
-    ├── email_handler.py # SMTP email with attachment support
-    └── ghl_handler.py   # Async GHL API with rate limiting
+qntm-clubauto/
+├── src/
+│   ├── data_fetcher.py      # Daxko API integration with pagination
+│   ├── data_transformer.py  # Field mapping and validation logic
+│   ├── logger_config.py     # Centralized logging configuration
+│   └── output_handlers/
+│       ├── csv_handler.py   # CSV generation with dual output format
+│       ├── email_handler.py # SMTP email with attachment support
+│       └── ghl_handler.py   # Async GHL API with rate limiting
+├── main.py                  # Main execution script
+├── webhook_handler.py       # Flask webhook server
+├── run_cron.sh             # Production cron script
+└── run_cron_days_back.sh   # Incremental sync script
 ```
 
 ## Development Notes
@@ -126,7 +131,7 @@ src/
 
 ### Deployment
 - Production runs via cron jobs (`run_cron.sh`, `run_cron_days_back.sh`)
-- Uses Python virtual environment at `/home/qntmfitlife/qntmapi/clubauto/myenv`
+- Uses Python virtual environment at `/home/qntmfitlife/qntmapi/qntm-clubauto/myenv`
 - Webhook server runs independently as Flask application
 
 ## Troubleshooting

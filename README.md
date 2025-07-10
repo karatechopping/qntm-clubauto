@@ -1,4 +1,4 @@
-# Club Auto Data Integration
+# QNTM Club Auto Data Integration
 
 A Python application for syncing member data between Daxko and GoHighLevel (GHL), with CSV export and email notifications.
 
@@ -85,7 +85,7 @@ python main.py --run_csv=True --run_ghl=False --run_email=True --attach_csv=True
 ## Project Structure
 
 ```
-clubauto/
+qntm-clubauto/
 ├── main.py                 # Main execution script
 ├── src/
 │   ├── data_fetcher.py     # Daxko API integration
